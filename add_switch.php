@@ -3,22 +3,30 @@
 include 'db_connection.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Collect POST data and insert into database
+    // Collect POST data and ensure that location is not empty
     $asset_number = $_POST['asset_number'];
     $ip_address = $_POST['ip_address'];
     $port_count = $_POST['port_count'];
+    $location = isset($_POST['location']) ? trim($_POST['location']) : '';  // Check if location is set and not empty
 
-    // Insert the switch into the database
-    $sql = "INSERT INTO switches (asset_number, ip_address, port_count) VALUES (?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ssi', $asset_number, $ip_address, $port_count);
-    if ($stmt->execute()) {
-        echo "<div class='alert alert-success'>Switch added successfully!</div>";
+    // Ensure location is not empty before inserting
+    if (empty($location)) {
+        echo "<div class='alert alert-danger'>Location is required!</div>";
     } else {
-        echo "<div class='alert alert-danger'>Error adding switch.</div>";
+        // Insert the switch into the database, including the location
+        $sql = "INSERT INTO switches (asset_number, ip_address, port_count, location) VALUES (?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('ssis', $asset_number, $ip_address, $port_count, $location);  // Bind the new parameter 'location'
+
+        if ($stmt->execute()) {
+            echo "<div class='alert alert-success'>Switch added successfully!</div>";
+        } else {
+            echo "<div class='alert alert-danger'>Error adding switch: " . $stmt->error . "</div>";
+        }
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -44,6 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label for="port_count">Port Count</label>
                 <input type="number" class="form-control" id="port_count" name="port_count" required>
             </div>
+            <div class="form-group">
+    <label for="location">Location</label>
+    <input type="text" class="form-control" id="location" name="location" required>
+</div>
+
+
             <button type="submit" class="btn btn-primary">Add Switch</button>
         </form>
     </div>

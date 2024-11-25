@@ -15,16 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $mac_address = $_POST['mac_address'];
     $switch_id = $_POST['switch_id'];
     $port = $_POST['port'];
+    $switch_location = isset($_POST['switch_location']) ? $_POST['switch_location'] : '';  // Fetch switch location
 
-    // Insert camera into database
-    $sql = "INSERT INTO cameras (asset_number, brand, location, ip_address, mac_address, switch_id, port) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ssssssi', $asset_number, $brand, $location, $ip_address, $mac_address, $switch_id, $port);
-    if ($stmt->execute()) {
-        echo "<div class='alert alert-success'>Camera added successfully!</div>";
+    // Validate switch_location (ensure it's not empty)
+    if (empty($switch_location)) {
+        echo "<div class='alert alert-danger'>Switch location is required!</div>";
     } else {
-        echo "<div class='alert alert-danger'>Error adding camera.</div>";
+        // Insert camera into database, including the new switch location
+        $sql = "INSERT INTO cameras (asset_number, brand, location, ip_address, mac_address, switch_id, port, switch_location) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('ssssssis', $asset_number, $brand, $location, $ip_address, $mac_address, $switch_id, $port, $switch_location);
+        if ($stmt->execute()) {
+            echo "<div class='alert alert-success'>Camera added successfully!</div>";
+        } else {
+            echo "<div class='alert alert-danger'>Error adding camera: " . $stmt->error . "</div>";
+        }
     }
 }
 ?>
@@ -35,8 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Camera</title>
+    <!-- Include Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Include Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
 </head>
 <body>
     <div class="container mt-5">
@@ -63,11 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <input type="text" class="form-control" id="mac_address" name="mac_address" required>
             </div>
             <div class="form-group">
-                <label for="switch_id">Switch</label>
+                <label for="switch_id">Connected Switch</label>
                 <select class="form-control" id="switch_id" name="switch_id" required>
                     <option value="">Select a Switch</option>
                     <?php while ($row = $switches_result->fetch_assoc()) { ?>
-                        <option value="<?php echo $row['id']; ?>"><?php echo $row['asset_number']; ?></option>
+                        <option value="<?php echo $row['id']; ?>"><?php echo $row['ip_address']; ?></option>
                     <?php } ?>
                 </select>
             </div>
@@ -77,11 +88,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <option value="">Select Port</option>
                 </select>
             </div>
+            <!-- New field for Switch Location -->
+            <div class="form-group">
+    <label for="switch_location">Switch Location</label>
+    <input type="text" class="form-control" id="switch_location" name="switch_location" required>
+</div>
+
             <button type="submit" class="btn btn-primary">Add Camera</button>
         </form>
     </div>
 
     <script>
+        // Apply Select2 to the switch select element for search functionality
+        $('#switch_id').select2({
+            placeholder: "Select a Switch",
+            allowClear: true
+        });
+
         // Fetch ports for selected switch using AJAX
         $('#switch_id').change(function() {
             var switch_id = $(this).val();
