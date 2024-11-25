@@ -2,19 +2,26 @@
 // Include database connection
 include 'db_connection.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Get switch ID from the POST request
+// Check if switch_id is provided
+if (isset($_POST['switch_id'])) {
     $switch_id = $_POST['switch_id'];
 
-    // Query to fetch the switch location
+    // Query to get the switch location
     $query = "SELECT location FROM switches WHERE id = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param('i', $switch_id);  // Assuming switch_id is an integer
+    $stmt->bind_param('i', $switch_id);
     $stmt->execute();
     $stmt->bind_result($switch_location);
-    $stmt->fetch();
-    
-    // Output the switch location or an empty string if not found
-    echo $switch_location ? $switch_location : '';
+
+    // Check if a result was found
+    if ($stmt->fetch()) {
+        // Return switch location as a JSON response
+        echo json_encode(['success' => true, 'switch_location' => $switch_location]);
+    } else {
+        // If no location found, return error
+        echo json_encode(['success' => false]);
+    }
+
+    $stmt->close();
 }
 ?>

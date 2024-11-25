@@ -90,9 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
             <!-- New field for Switch Location -->
             <div class="form-group">
-    <label for="switch_location">Switch Location</label>
-    <input type="text" class="form-control" id="switch_location" name="switch_location" required>
-</div>
+                <label for="switch_location">Switch Location</label>
+                <input type="text" class="form-control" id="switch_location" name="switch_location" readonly>
+            </div>
 
             <button type="submit" class="btn btn-primary">Add Camera</button>
         </form>
@@ -122,6 +122,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $('#port').html(portOptions);
                     }
                 });
+
+                // Fetch the switch location for the selected switch
+                $.ajax({
+                    url: 'fetch_switch_location.php',  // This file will handle the request
+                    method: 'POST',
+                    data: { switch_id: switch_id },
+                    success: function(response) {
+                        var data = JSON.parse(response);
+                        if (data.success) {
+                            // Populate the switch location field and set it as readonly
+                            $('#switch_location').val(data.switch_location);
+                        } else {
+                            $('#switch_location').val('');
+                        }
+                    }
+                });
+            } else {
+                // If no switch is selected, clear the location field
+                $('#switch_location').val('');
+                $('#port').html('<option value="">Select Port</option>'); // Reset ports
             }
         });
     </script>
